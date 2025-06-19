@@ -1,20 +1,16 @@
-// File: app/controller/VectorTab.java
 package app.controller;
 
+import app.view.Canvas3D;
+import app.view.Canvas2D;
 import app.model.VectorWorld;
 import app.ui.VectorListPanel;
-import app.view.Canvas2D;
-import app.view.Canvas3D;
-import app.view.VectorCanvas;
-import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.TitledPane;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.control.TitledPane;
+import javafx.collections.ListChangeListener;
 
 public class VectorTab extends BorderPane {
 
@@ -31,40 +27,46 @@ public class VectorTab extends BorderPane {
         canvas3D.showGridProperty().bind(canvas2D.showGridProperty());
         canvas3D.showTicksProperty().bind(canvas2D.showTicksProperty());
 
-        canvasPane.getChildren().add(canvas2D.getView());
+        canvasPane.getChildren().add(canvas2D);
+        canvas2D.widthProperty().bind(canvasPane.widthProperty());
+        canvas2D.heightProperty().bind(canvasPane.heightProperty());
+
+        canvasPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         // painel de vetores e de exibição (igual antes)
         TitledPane vectorsPane = new TitledPane("Vetores", new VectorListPanel(world));
         vectorsPane.setCollapsible(false);
 
         VBox checks = new VBox(6,
-                makeCheck("Resultado (v₁+v₂)", canvas2D.showResultProperty()),
-                makeCheck("Coordenadas",          canvas2D.showCoordProperty()),
-                makeCheck("Ângulo",               canvas2D.showAngleProperty()),
-                makeCheck("Ortogonalidade",       canvas2D.showOrthoProperty()),
-                makeCheck("Ticks",                canvas2D.showTicksProperty()),
-                makeCheck("Grade",                canvas2D.showGridProperty())
+                makeCheck("Resultado (v₁+v₂)",    canvas2D.showResultProperty()),
+                makeCheck("Coordenadas",          canvas2D.showCoordProperty ()),
+                makeCheck("Ângulo",               canvas2D.showAngleProperty ()),
+                makeCheck("Ortogonalidade",       canvas2D.showOrthoProperty ()),
+                makeCheck("Ticks",                canvas2D.showTicksProperty ()),
+                makeCheck("Grade",                canvas2D.showGridProperty  ())
         );
         checks.setPadding(new Insets(8));
         TitledPane displayPane = new TitledPane("Exibição", checks);
         displayPane.setCollapsible(false);
 
         VBox side = new VBox(10, vectorsPane, displayPane);
-        side.setPrefWidth(300);
+        side.setStyle("-fx-background-color: #fafbfc; -fx-border-color: #e0e0e0; -fx-border-width: 0 1 0 1;");
         side.setPadding(new Insets(10));
+        side.setPrefWidth(300);
+        side.setMaxHeight(Double.MAX_VALUE);
 
         setCenter(canvasPane);
         setLeft(side);
 
         canvasPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        BorderPane.setAlignment(canvasPane, Pos.CENTER);
+        canvasPane.setPrefSize(0, 0);
 
         // dispara troca de canvas quando vetores mudam ou qualquer zProperty muda
         world.getVectors().addListener((ListChangeListener<? super app.model.ObservableVector>) c -> {
             while (c.next()) {
                 if (c.wasAdded()) {
                     c.getAddedSubList().forEach(v ->
-                            v.zProperty().addListener(o -> switchCanvas())
+                            v.zProperty().addListener(_ -> switchCanvas())
                     );
                 }
             }
@@ -72,8 +74,11 @@ public class VectorTab extends BorderPane {
         });
         // para vetores já existentes
         world.getVectors().forEach(v ->
-                v.zProperty().addListener(o -> switchCanvas())
+                v.zProperty().addListener(_ -> switchCanvas())
         );
+
+        BorderPane.setAlignment(canvasPane, javafx.geometry.Pos.CENTER);
+        BorderPane.setAlignment(side, javafx.geometry.Pos.CENTER);
     }
 
     private void switchCanvas() {

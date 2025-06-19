@@ -1,5 +1,6 @@
 package app.view;
 
+import app.util.Cone;
 import app.model.ObservableVector;
 import app.model.VectorWorld;
 import javafx.beans.property.BooleanProperty;
@@ -63,6 +64,8 @@ public class Canvas3D extends StackPane implements VectorCanvas {
 
         subScene = new SubScene(root3D, 600, 600, true, null);
         subScene.setCamera(cam);
+        subScene.widthProperty().bind(widthProperty());
+        subScene.heightProperty().bind(heightProperty());
         getChildren().add(subScene);
 
         /* redimensiona */
@@ -132,7 +135,7 @@ public class Canvas3D extends StackPane implements VectorCanvas {
     private void buildGrids(double spanUnits) {
         int lines = (int)Math.ceil(spanUnits);
         double lenPx = lines * 2 * currentScale;
-        PhongMaterial mat = new PhongMaterial(Color.grayRgb(180, 0.8));
+        PhongMaterial mat = new PhongMaterial(Color.grayRgb(180, 1));
 
         // GRID NO PLANO XZ (Y = 0)
         for (int k = -lines; k <= lines; k++) {
@@ -161,7 +164,7 @@ public class Canvas3D extends StackPane implements VectorCanvas {
             Cylinder c3 = new Cylinder(0.3, lenPx);
             c3.setMaterial(mat);
             c3.getTransforms().addAll(
-                    new Rotate(90, Rotate.Z_AXIS),
+                    new Rotate(90, Rotate.Y_AXIS),
                     new Translate(0, k * currentScale, 0)
             );
             gridGroup.getChildren().add(c3);
@@ -170,6 +173,7 @@ public class Canvas3D extends StackPane implements VectorCanvas {
             Cylinder c4 = new Cylinder(0.3, lenPx);
             c4.setMaterial(mat);
             c4.getTransforms().addAll(
+                    new Rotate(0, Rotate.X_AXIS),
                     new Translate(k * currentScale, 0, 0)
             );
             gridGroup.getChildren().add(c4);
@@ -181,7 +185,8 @@ public class Canvas3D extends StackPane implements VectorCanvas {
             Cylinder c5 = new Cylinder(0.3, lenPx);
             c5.setMaterial(mat);
             c5.getTransforms().addAll(
-                    new Translate(0, k * currentScale, 0)
+                    new Rotate(0, Rotate.Z_AXIS),
+                    new Translate(0, 0,k * currentScale )
             );
             gridGroup.getChildren().add(c5);
 
@@ -189,8 +194,8 @@ public class Canvas3D extends StackPane implements VectorCanvas {
             Cylinder c6 = new Cylinder(0.3, lenPx);
             c6.setMaterial(mat);
             c6.getTransforms().addAll(
-                    new Rotate(90, Rotate.X_AXIS),
-                    new Translate(0, 0, k * currentScale)
+                    new Rotate(90, Rotate.Y_AXIS),
+                    new Translate(0, k * currentScale, 0)
             );
             gridGroup.getChildren().add(c6);
         }
@@ -217,44 +222,87 @@ public class Canvas3D extends StackPane implements VectorCanvas {
 
     /* ---------- eixos bidirecionais ---------- */
     private void buildAxes(double spanUnits) {
-        double axisLenPx = spanUnits * currentScale;
-        double R = 1.2;
+        double len = spanUnits * currentScale;
+        double shaftRadius = 1.0;
+        double headLen = 12;
+        double headRad = 4;
 
-        Cylinder x = new Cylinder(R, axisLenPx * 2);
+        // EIXO X (horizontal)
+        Cylinder x = new Cylinder(shaftRadius, len * 2);
         x.setMaterial(new PhongMaterial(Color.RED));
-        x.getTransforms().add(new Rotate(90, Rotate.Z_AXIS));
+        x.getTransforms().addAll(
+                new Rotate(90, Rotate.Z_AXIS),
+                new Translate(0, 0, 0)  // centrado na origem
+        );
 
-        Cylinder y = new Cylinder(R, axisLenPx * 2);
+        Cone xHead = new Cone((float) headRad, (float) headLen, 24, Color.RED);
+        xHead.getTransforms().addAll(
+                new Rotate(90, Rotate.Z_AXIS),
+                new Translate(len, 0, 0)
+        );
+
+        Text xLabel = new Text("X");
+        xLabel.setFill(Color.RED.darker());
+        xLabel.getTransforms().add(new Translate(len + headLen + 6, 0, 0));
+
+        // EIXO Y (vertical)
+        Cylinder y = new Cylinder(shaftRadius, len * 2);
         y.setMaterial(new PhongMaterial(Color.GREEN));
+        y.getTransforms().add(new Translate(0, 0, 0));
 
-        Cylinder z = new Cylinder(R, axisLenPx * 2);
+        Cone yHead = new Cone((float) headRad, (float) headLen, 24, Color.GREEN);
+        yHead.getTransforms().addAll(
+                new Translate(0, len, 0)
+        );
+
+        Text yLabel = new Text("Y");
+        yLabel.setFill(Color.GREEN.darker());
+        yLabel.getTransforms().add(new Translate(0, len + headLen + 6, 0));
+
+        // EIXO Z (profundidade)
+        Cylinder z = new Cylinder(shaftRadius, len * 2);
         z.setMaterial(new PhongMaterial(Color.BLUE));
-        z.getTransforms().add(new Rotate(90, Rotate.X_AXIS));
+        z.getTransforms().addAll(
+                new Rotate(90, Rotate.X_AXIS),
+                new Translate(0, 0, 0)
+        );
 
-        axesGroup.getChildren().addAll(x, y, z);
+        Cone zHead = new Cone((float) headRad, (float) headLen, 24, Color.BLUE);
+        zHead.getTransforms().addAll(
+                new Rotate(90, Rotate.X_AXIS),
+                new Translate(0, 0, len)
+        );
+
+        Text zLabel = new Text("Z");
+        zLabel.setFill(Color.BLUE.darker());
+        zLabel.getTransforms().add(new Translate(0, 0, len + headLen + 6));
+
+        // Adiciona todos ao grupo
+        axesGroup.getChildren().addAll(
+                x, xHead, xLabel,
+                y, yHead, yLabel,
+                z, zHead, zLabel
+        );
     }
 
     /* ---------- seta de vetor ---------- */
     private Group buildArrow(ObservableVector v, Color color, String label) {
         double lenPx   = magnitude(v.toArray()) * currentScale;
-        double headLen = 14, headRad = 4, shaftRad = 2, shaftLen = lenPx - headLen;
+        double headLen = lenPx * 0.12, headRad = headLen * 0.35, shaftRad = 2, shaftLen = lenPx - headLen;
 
         Cylinder shaft = new Cylinder(shaftRad, Math.max(shaftLen, 1));
         shaft.setMaterial(new PhongMaterial(color));
         shaft.getTransforms().add(new Translate(0, -shaftLen / 2, 0));
 
-        Box head = new Box(headRad, headLen, headRad);
-        head.setMaterial(new PhongMaterial(color));
-        head.getTransforms().add(new Translate(0, -lenPx + headLen / 2, 0));
-
+        Cone head = new Cone((float) headRad, (float) headLen, 24, color);
+        head.getTransforms().addAll(new Translate(0, -lenPx + headLen/2, 0));
         Group arrow = new Group(shaft, head);
         arrow.getTransforms().add(orientFromYAxis(v.getX(), v.getY(), v.getZ()));
 
-        Text t = new Text(label + String.format(" (%.1f, %.1f, %.1f)",
-                v.getX(), v.getY(), v.getZ()));
+        Text t = new Text(label + String.format(" (%.1f, %.1f, %.1f)", v.getX(), v.getY(), v.getZ()));
         t.setFill(color.darker());
         t.setTranslateY(-lenPx - 12);
-        arrow.getChildren().add(t);
+        // arrow.getChildren().add(t);
         return arrow;
     }
 

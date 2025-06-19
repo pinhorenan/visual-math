@@ -16,7 +16,7 @@ public class VectorCell extends ListCell<ObservableVector> {
 
     public VectorCell(javafx.collections.ObservableList<ObservableVector> list) {
         box.setPadding(new Insets(4));
-        Button remove = new Button("×");
+        Button remove = new Button("x");
         box.getChildren().addAll(
                 new Label("x"), sx,
                 new Label("y"), sy,
@@ -48,8 +48,8 @@ public class VectorCell extends ListCell<ObservableVector> {
 
     private Spinner<Double> buildSpinner() {
         Spinner<Double> sp = new Spinner<>(-20, 20, 0, 0.1);
-        sp.setPrefWidth(60);
         sp.setEditable(true);
+        sp.setPrefWidth(60);
         return sp;
     }
     /** Mantém o spinner e a propriedade sincronizados a cada digitação. */

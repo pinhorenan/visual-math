@@ -13,31 +13,30 @@ import javafx.scene.paint.Color;
 
 /**
  * Renderizador 2D para N vetores.
- * <p>Escala dinâmica, grade/ticks opcionais, suporte a rotulagem e exibição
- * de ângulo + ortogonalidade entre v₁ e v₂ (quando existirem).</p>
  */
 public class Canvas2D extends Canvas implements VectorCanvas {
     private VectorWorld world;
 
     /* flags de exibição */
-    private final BooleanProperty showResult = new SimpleBooleanProperty(true);
-    private final BooleanProperty showCoord  = new SimpleBooleanProperty(true);
-    private final BooleanProperty showOrtho  = new SimpleBooleanProperty(true);
-    private final BooleanProperty showAngle  = new SimpleBooleanProperty(true);
-    private final BooleanProperty showTicks  = new SimpleBooleanProperty(true);
-    private final BooleanProperty showGrid   = new SimpleBooleanProperty(true);
+    private final BooleanProperty showResult = new SimpleBooleanProperty(false);
+    private final BooleanProperty showCoord  = new SimpleBooleanProperty(false);
+    private final BooleanProperty showOrtho  = new SimpleBooleanProperty(false);
+    private final BooleanProperty showAngle  = new SimpleBooleanProperty(false);
+    private final BooleanProperty showTicks  = new SimpleBooleanProperty(false);
+    private final BooleanProperty showGrid   = new SimpleBooleanProperty(false);
 
     private double currentScale = 30;
 
     public Canvas2D() {
         super(600, 600);
         setStyle("-fx-border-color:#bbb; -fx-border-width:1;");
+
+        // redesenha semopre que mudar
         widthProperty().addListener(_ -> draw());
         heightProperty().addListener(_ -> draw());
     }
 
     /* =========== Propriedades de exibição =========== */
-
     public BooleanProperty showResultProperty(){ return showResult; }
     public BooleanProperty showCoordProperty (){ return showCoord;  }
     public BooleanProperty showOrthoProperty (){ return showOrtho;  }
@@ -48,11 +47,10 @@ public class Canvas2D extends Canvas implements VectorCanvas {
 
     /* ============== VectorCanvas ============== */
 
-    @Override
-    public void bind(VectorWorld world) {
+    @Override public void bind(VectorWorld world) {
         this.world = world;
 
-        /* 1) Ouvinte para adição/remoção de vetores na lista */
+        /* ouvintes na lista e nos vetores */
         world.getVectors().addListener((ListChangeListener<ObservableVector>) c -> {
             while (c.next()) {
                 if (c.wasAdded()) {
@@ -69,6 +67,7 @@ public class Canvas2D extends Canvas implements VectorCanvas {
             v.yProperty().addListener(_ -> draw());
         });
 
+        /* redesenhar quando qualquer flag mudar */
         showResult.addListener(_ -> draw());
         showCoord .addListener(_ -> draw());
         showOrtho .addListener(_ -> draw());
@@ -79,10 +78,7 @@ public class Canvas2D extends Canvas implements VectorCanvas {
         draw();
     }
 
-    @Override
-    public Node getView() {
-        return this;
-    }
+    @Override public Node getView() { return this; }
 
     /* ================= Desenho principal ================= */
 
@@ -94,15 +90,13 @@ public class Canvas2D extends Canvas implements VectorCanvas {
         g.setFill(Color.WHITE); g.fillRect(0, 0, W, H);
         if (world == null) return;
 
-        /* === escala dinâmica === */
+        /* escala dinâmica */
         double max = 1;
-        for (ObservableVector v : world.getVectors()) {
+        for (ObservableVector v : world.getVectors())
             max = Math.max(max, Math.max(Math.abs(v.getX()), Math.abs(v.getY())));
-        }
         double margin = 80;
         currentScale = max == 0 ? 40 : Math.min((W/2 - margin) / max, (H/2 - margin) / max);
 
-        /* grade */
         if (showGrid.get()) drawGrid(g, cx, cy);
         g.setStroke(Color.LIGHTGRAY); g.setLineWidth(1);
         g.strokeLine(cx, 0, cx, H); g.strokeLine(0, cy, W, cy);
